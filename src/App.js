@@ -6,15 +6,33 @@ import ColumnSection from "./component/ColumnSection";
 function App() {
   const [userName, setUserName] = useState("");
   const [forks, setForks] = useState(false);
-  const [data1, setData1] = useState();
+  const [data, setData] = useState();
+  const [error, setError] = useState({
+    isError: true,
+    message: "",
+  });
 
-  const fetchData = (props) => {
-    fetch(`https://api.github.com/users/${props}/repos`)
+  const fetchData = (name) => {
+    fetch(`https://api.github.com/users/${name}/repos`)
       .then((resp) => resp.json())
       .then((dta) => {
-        if (dta !== undefined) {
+        if (dta.message) {
+          setError({
+            isError: true,
+            message: dta.message,
+          });
+        } else if (dta.length === 0) {
+          setError({
+            isError: true,
+            message: `No repo found for ${name}`,
+          });
+        } else {
           var res = dta.sort(({ size: a }, { size: b }) => b - a);
-          setData1(res);
+          setData(res);
+          setError({
+            isError: false,
+            message: "",
+          });
         }
       });
   };
@@ -47,32 +65,11 @@ function App() {
         </button>
       </div>
       {/* starting of the table */}
-      <section>
-        <header>
-          <div className="col">Name</div>
-          <div className="col">Language</div>
-          <div className="col">Description</div>
-          <div className="col">Size</div>
-        </header>
-        {/* Will map throught the data once received/fetch */}
-        {data1 && !data1.message ? (
-          data1.length === 0 ? (
-            <div>No repo for {userName}</div>
-          ) : forks ? (
-            data1.map((data) => {
-              return <ColumnSection key={data.id} data={data} />;
-            })
-          ) : (
-            data1
-              .filter((data) => !data.fork)
-              .map((data) => {
-                return <ColumnSection key={data.id} data={data} />;
-              })
-          )
-        ) : (
-          <div>Not Found</div>
-        )}
-      </section>
+      {error.isError ? (
+        <div className="error">{error.message}</div>
+      ) : (
+        <ColumnSection data={data} forks={forks} />
+      )}
     </div>
   );
 }
